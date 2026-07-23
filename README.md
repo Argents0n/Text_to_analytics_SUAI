@@ -21,22 +21,39 @@
 - **Cohort** — когортный анализ (retention / выручка) по периоду первой активности.
 - **Explorer** — ручной конструктор графиков + feature engineering (вычисляемые колонки), интерактив (zoom/tooltip).
 
+Поддерживает несколько связанных таблиц за раз: загрузи 2+ файла (или объедини их
+кнопкой «⋈ объединить» по общему ключу) — Chat сам делает JOIN, остальные разделы
+работают по выбранной (в т.ч. объединённой) таблице.
+
 Ядро: любой источник → таблица → DuckDB → аналитический движок. Вся статистика и
 аналитика — классическая (scipy/pandas), LLM участвует только в Chat и в формулировке
 выводов авто-отчёта.
 
-## Стек
+## Архитектура
 
-Python · Streamlit · DuckDB · sqlglot (SQL-guard) · Altair/Vega-Lite · numpy/scipy.
-LLM: OpenRouter (default) или Ollama (local fallback).
+- **`backend/`** — FastAPI поверх `t2a/` (движок: DuckDB, sqlglot-guard, scipy/statsmodels,
+  Vega-Lite чарты). REST API, датасеты и multi-table джойны — в памяти процесса.
+- **`frontend/`** — Next.js (TypeScript, Tailwind, react-vega). Чат + 10 разделов анализа.
+- **`t2a/`** — чистый Python-движок анализа, вызывается напрямую в eval-харнессе.
+
+Стек: Python · FastAPI · DuckDB · sqlglot · scipy/statsmodels · Next.js · TypeScript ·
+react-vega. LLM: OpenRouter (default) или Ollama (local fallback).
 
 ## Запуск
 
 ```bash
+# бэкенд
 uv sync
 cp .env.example .env   # вписать OPENROUTER_API_KEY
-uv run streamlit run app.py
+uv run uvicorn backend.main:app --port 8000 --reload
+
+# фронтенд (в другом терминале)
+cd frontend
+pnpm install
+pnpm dev
 ```
+
+Открыть **http://localhost:3000**.
 
 ## Eval
 
