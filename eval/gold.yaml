@@ -1,0 +1,84 @@
+# Gold set for execution-accuracy eval over data/sample_sales_ru.csv.
+# Each item: a RU question + reference SQL that defines the correct result.
+# Truth is the *result* of the reference SQL, not its text (BIRD/Spider style).
+dataset: data/sample_sales_ru.csv
+items:
+  - question: Сколько всего строк в данных?
+    sql: SELECT COUNT(*) FROM "data"
+
+  - question: Какая суммарная выручка по всем продажам?
+    sql: SELECT SUM("amount") FROM "data"
+
+  - question: Сумма выручки по категориям
+    sql: SELECT "category", SUM("amount") AS total FROM "data" GROUP BY "category"
+
+  - question: Средний чек по каждому региону
+    sql: SELECT "region", AVG("amount") AS avg_amount FROM "data" GROUP BY "region"
+
+  - question: Топ-3 категории по суммарной выручке
+    sql: SELECT "category", SUM("amount") AS total FROM "data" GROUP BY "category" ORDER BY total DESC LIMIT 3
+
+  - question: Сколько уникальных регионов в данных?
+    sql: SELECT COUNT(DISTINCT "region") FROM "data"
+
+  - question: Выручка по месяцам
+    sql: SELECT date_trunc('month', "date") AS month, SUM("amount") AS total FROM "data" GROUP BY month ORDER BY month
+
+  - question: Сколько продаж прошло через онлайн-канал?
+    sql: SELECT COUNT(*) FROM "data" WHERE "channel" = 'Онлайн'
+
+  - question: Средняя выручка по каналам продаж
+    sql: SELECT "channel", AVG("amount") AS avg_amount FROM "data" GROUP BY "channel"
+
+  - question: Какая категория принесла больше всего денег?
+    sql: SELECT "category", SUM("amount") AS total FROM "data" GROUP BY "category" ORDER BY total DESC LIMIT 1
+
+  - question: Общее количество проданных единиц товара
+    sql: SELECT SUM("qty") FROM "data"
+
+  - question: Выручка по категориям только в Москве
+    sql: SELECT "category", SUM("amount") AS total FROM "data" WHERE "region" = 'Москва' GROUP BY "category"
+
+  - question: Средняя выручка в категории Электроника
+    sql: SELECT AVG("amount") FROM "data" WHERE "category" = 'Электроника'
+
+  - question: Сколько продаж с суммой больше 50000?
+    sql: SELECT COUNT(*) FROM "data" WHERE "amount" > 50000
+
+  - question: Регионы с суммарной выручкой больше 10 миллионов
+    sql: SELECT "region", SUM("amount") AS total FROM "data" GROUP BY "region" HAVING SUM("amount") > 10000000
+
+  - question: Количество продаж по каждой категории
+    sql: SELECT "category", COUNT(*) AS cnt FROM "data" GROUP BY "category"
+
+  - question: Максимальная сумма одной продажи
+    sql: SELECT MAX("amount") FROM "data"
+
+  - question: Средняя выручка по категориям и каналам
+    sql: SELECT "category", "channel", AVG("amount") AS avg_amount FROM "data" GROUP BY "category", "channel"
+
+  # --- harder: window / CTE / subquery / percentile ---
+  - question: Накопительная выручка по месяцам нарастающим итогом
+    sql: >
+      WITH m AS (SELECT date_trunc('month', "date") AS mth, SUM("amount") AS rev FROM "data" GROUP BY 1)
+      SELECT mth, SUM(rev) OVER (ORDER BY mth) AS cum FROM m
+
+  - question: Доля каждой категории в общей выручке
+    sql: SELECT "category", SUM("amount") / (SELECT SUM("amount") FROM "data") AS share FROM "data" GROUP BY "category"
+
+  - question: Топ-категория по выручке в каждом регионе
+    sql: >
+      WITH t AS (SELECT "region", "category", SUM("amount") AS rev FROM "data" GROUP BY 1, 2),
+      r AS (SELECT *, ROW_NUMBER() OVER (PARTITION BY "region" ORDER BY rev DESC) AS rn FROM t)
+      SELECT "region", "category", rev FROM r WHERE rn = 1
+
+  - question: Медианная сумма покупки по категориям
+    sql: SELECT "category", MEDIAN("amount") AS med FROM "data" GROUP BY "category"
+
+  - question: Клиенты с суммой покупок выше средней по всем клиентам
+    sql: >
+      WITH c AS (SELECT "customer_id", SUM("amount") AS total FROM "data" GROUP BY 1)
+      SELECT "customer_id", total FROM c WHERE total > (SELECT AVG(total) FROM c)
+
+  - question: Число уникальных клиентов по месяцам
+    sql: SELECT date_trunc('month', "date") AS mth, COUNT(DISTINCT "customer_id") AS clients FROM "data" GROUP BY 1

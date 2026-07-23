@@ -1,0 +1,24 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+.DS_Store
+.duckdb
+*.duckdb
+.pytest_cache/
+uploads/
+
+# frontend
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/tsconfig.tsbuildinfo
+frontend/*.log
+
+# third-party course data — not ours to publish
+data/users_go.csv
+data/rides_go.csv
+data/subscriptions_go.csv
+
+# local db artifacts
+.cache/
